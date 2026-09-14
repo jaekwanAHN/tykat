@@ -1,8 +1,10 @@
+import { applyHeal, matchSkill } from "../data/skills";
+
 export const PLAYER_MAX_HP = 100;
 export const ENEMY_MAX_HP = 200;
 export const ENEMY_ATTACK_DAMAGE = 20;
 export const ENEMY_ATTACK_INTERVAL = 5_000;
-export const DEBUG_ATTACK_DAMAGE = 10;
+export const EVADE_DURATION = 1_000;
 export const MAX_DELTA_MS = 100;
 const HUD_INTERVAL_MS = 100;
 
@@ -12,6 +14,9 @@ export type BattleSnapshot = {
   playerHp: number;
   enemyHp: number;
   attackRemaining: number;
+  evadeRemaining: number;
+  feedback: string;
+  feedbackId: number;
 };
 
 export function applyDamage(hp: number, damage: number): number {
@@ -19,7 +24,7 @@ export function applyDamage(hp: number, damage: number): number {
 }
 
 export function initialBattle(): BattleSnapshot {
-  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL };
+  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0 };
 }
 
 // Battle calculations live here; neither React nor Canvas is a dependency.
@@ -36,26 +41,52 @@ export class GameEngine {
     this.publish();
   }
 
-  attack() {
+  cast(input: string) {
     if (this.state.status !== "playing") return;
-    this.state.enemyHp = applyDamage(this.state.enemyHp, DEBUG_ATTACK_DAMAGE);
-    if (this.state.enemyHp === 0) this.state.status = "victory";
+    const skill = matchSkill(input);
+    if (!skill) {
+      this.setFeedback("CAST FAILED · 기술명을 확인하세요");
+    } else if (skill.type === "attack") {
+      this.state.enemyHp = applyDamage(this.state.enemyHp, skill.damage);
+      this.setFeedback(`${skill.name} · ${skill.damage} DAMAGE`);
+      if (this.state.enemyHp === 0) this.state.status = "victory";
+    } else if (skill.type === "heal") {
+      const previousHp = this.state.playerHp;
+      this.state.playerHp = applyHeal(previousHp, skill.heal, PLAYER_MAX_HP);
+      this.setFeedback(`치유 · +${this.state.playerHp - previousHp} HP`);
+    } else {
+      this.state.evadeRemaining = EVADE_DURATION;
+      this.setFeedback("회피 · 1초 동안 공격 무효");
+    }
     this.publish();
   }
 
   update(deltaMs: number) {
     if (this.state.status !== "playing" || !Number.isFinite(deltaMs)) return;
     const elapsed = Math.max(0, Math.min(deltaMs, MAX_DELTA_MS));
+    // Compare expiry at the actual attack instant, before consuming this frame.
+    const dodged = this.state.evadeRemaining > 0 && this.state.evadeRemaining >= this.state.attackRemaining;
+    this.state.evadeRemaining = Math.max(0, this.state.evadeRemaining - elapsed);
     this.state.attackRemaining -= elapsed;
     this.hudElapsed += elapsed;
     if (this.state.attackRemaining <= 0) {
-      this.state.playerHp = applyDamage(this.state.playerHp, ENEMY_ATTACK_DAMAGE);
+      if (dodged) {
+        this.setFeedback("DODGE! · 공격 회피 성공");
+      } else {
+        this.state.playerHp = applyDamage(this.state.playerHp, ENEMY_ATTACK_DAMAGE);
+        this.setFeedback(`피격 · -${ENEMY_ATTACK_DAMAGE} HP`);
+      }
       this.state.attackRemaining += ENEMY_ATTACK_INTERVAL;
       if (this.state.playerHp === 0) this.state.status = "gameover";
       this.publish();
     } else if (this.hudElapsed >= HUD_INTERVAL_MS) {
       this.publish();
     }
+  }
+
+  private setFeedback(message: string) {
+    this.state.feedback = message;
+    this.state.feedbackId++;
   }
 
   private publish() {

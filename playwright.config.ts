@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
-  use: { baseURL: "http://127.0.0.1:3100", viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 },
-  webServer: { command: "npm run dev -- --hostname 127.0.0.1 --port 3100", url: "http://127.0.0.1:3100", reuseExistingServer: !process.env.CI },
+  timeout: 60_000,
+  use: { baseURL: "http://localhost:3000", viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 },
+  webServer: { command: "npm run dev -- --hostname 0.0.0.0 --port 3000", url: "http://localhost:3000", reuseExistingServer: !process.env.CI },
 });
