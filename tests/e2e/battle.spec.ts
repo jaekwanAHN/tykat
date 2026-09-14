@@ -17,14 +17,14 @@ test("start, attack, enemy timer, terminal states, reset and responsive canvas",
   await expect(page.getByTestId("player-hp")).toHaveText("80 / 100");
   for (let i = 0; i < 19; i++) await cast();
   await expect(page.getByTestId("battle-status")).toHaveText("오우거 처치 · 전투 종료");
-  await expect(input).toBeDisabled();
+  await expect(input).toHaveCount(0);
   await page.clock.runFor(6000);
   await expect(page.getByTestId("player-hp")).toHaveText("80 / 100");
-  await page.getByRole("button", { name: "전투 초기화" }).click();
+  await page.getByRole("button", { name: "RETRY · 다시 시작" }).click();
   await page.clock.runFor(25100);
   await expect(page.getByTestId("battle-status")).toHaveText("플레이어 쓰러짐 · 전투 종료");
-  await expect(input).toBeDisabled();
-  await page.getByRole("button", { name: "전투 초기화" }).click();
+  await expect(input).toHaveCount(0);
+  await page.getByRole("button", { name: "RETRY · 다시 시작" }).click();
   await expect(page.getByTestId("player-hp")).toHaveText("100 / 100");
   await expect(page.getByTestId("enemy-hp")).toHaveText("200 / 200");
   const canvas = page.locator("canvas");

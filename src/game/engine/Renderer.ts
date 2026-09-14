@@ -59,4 +59,12 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
   ctx.beginPath(); ctx.ellipse(500, 340, 250, 52, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.attackRemaining / ENEMY_ATTACK_INTERVAL); ctx.stroke();
   renderEffects(ctx, effects);
   ctx.restore();
+  if (state.status === "victory" || state.status === "gameover") {
+    ctx.save(); ctx.scale(width / 1000, height / 520);
+    ctx.fillStyle = "#080b12aa"; ctx.fillRect(0, 165, 1000, 115);
+    ctx.textAlign = "center"; ctx.font = "900 58px Arial, sans-serif";
+    ctx.fillStyle = state.status === "victory" ? "#ffddab" : "#ff8fa5";
+    ctx.fillText(state.status === "victory" ? "VICTORY" : "GAME OVER", 500, 240);
+    ctx.restore();
+  }
 }

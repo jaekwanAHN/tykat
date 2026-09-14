@@ -25,6 +25,7 @@ export type BattleSnapshot = {
   wpm: number;
   perfectCasts: number;
   lastCast: CastResult | null;
+  elapsedMs: number;
 };
 
 export function applyDamage(hp: number, damage: number): number {
@@ -32,7 +33,7 @@ export function applyDamage(hp: number, damage: number): number {
 }
 
 export function initialBattle(): BattleSnapshot {
-  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null };
+  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null, elapsedMs: 0 };
 }
 
 // Battle calculations live here; neither React nor Canvas is a dependency.
@@ -100,6 +101,8 @@ export class GameEngine {
   update(deltaMs: number) {
     if (this.state.status !== "playing" || !Number.isFinite(deltaMs)) return;
     const elapsed = Math.max(0, Math.min(deltaMs, MAX_DELTA_MS));
+    this.state.elapsedMs += this.state.playerHp <= ENEMY_ATTACK_DAMAGE && this.state.evadeRemaining < this.state.attackRemaining
+      ? Math.min(elapsed, this.state.attackRemaining) : elapsed;
     // Compare expiry at the actual attack instant, before consuming this frame.
     const dodged = this.state.evadeRemaining > 0 && this.state.evadeRemaining >= this.state.attackRemaining;
     this.state.evadeRemaining = Math.max(0, this.state.evadeRemaining - elapsed);
