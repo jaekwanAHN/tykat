@@ -2,17 +2,20 @@
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { skills } from "@/game/data/skills";
+import { AttemptTracker } from "@/lib/typing/TypingAttempt";
+import type { TypingAttempt } from "@/lib/typing/metrics";
 
 type Props = {
   enabled: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
-  onCast: (input: string) => void;
+  onCast: (input: string, attempt: TypingAttempt) => void;
 };
 
 export function SkillInput({ enabled, inputRef, onCast }: Props) {
   const [value, setValue] = useState("");
   const [composing, setComposing] = useState(false);
   const compositionRef = useRef(false);
+  const tracker = useRef(new AttemptTracker());
 
   useEffect(() => {
     if (!enabled) return;
@@ -29,6 +32,7 @@ export function SkillInput({ enabled, inputRef, onCast }: Props) {
         return <li key={skill.id} className={`rounded border px-3 py-2 ${matching ? "border-orange-300 bg-orange-300/10" : "border-slate-700 bg-slate-950/40"}`}>
           <p className="font-bold">{matching ? <><mark className="bg-transparent text-orange-300">{value}</mark>{skill.name.slice(value.length)}</> : skill.name}</p>
           <p className="mt-1 text-[10px] text-slate-400">{skill.type === "attack" ? `${skill.damage} DAMAGE` : skill.type === "heal" ? "+30 HP" : "1초 회피"}</p>
+          <p className="text-[10px] text-orange-200/70">PERFECT ≤ {skill.castTimeTarget / 1000}s</p>
         </li>;
       })}
     </ul>
@@ -39,16 +43,28 @@ export function SkillInput({ enabled, inputRef, onCast }: Props) {
         placeholder={enabled ? "기술명을 입력하세요" : "전투를 시작하세요"}
         autoComplete="off" autoCorrect="off" spellCheck={false} maxLength={40}
         aria-describedby="input-help"
-        onChange={(event) => setValue(event.target.value)}
-        onCompositionStart={() => { compositionRef.current = true; setComposing(true); }}
+        onChange={(event) => {
+          if (event.target.value) tracker.current.change(performance.now());
+          if (!compositionRef.current && !(event.nativeEvent as InputEvent).isComposing) {
+            tracker.current.committed(event.target.value, skills.map((skill) => skill.name));
+          }
+          setValue(event.target.value);
+        }}
+        onPaste={() => { tracker.current.begin(performance.now()); tracker.current.assist(); }}
+        onDrop={() => { tracker.current.begin(performance.now()); tracker.current.assist(); }}
+        onCut={() => tracker.current.correct()}
+        onCompositionStart={() => { tracker.current.begin(performance.now()); compositionRef.current = true; setComposing(true); }}
         onCompositionUpdate={() => { compositionRef.current = true; }}
         onCompositionEnd={(event) => {
           compositionRef.current = false;
           setComposing(false);
           setValue(event.currentTarget.value);
+          tracker.current.committed(event.currentTarget.value, skills.map((skill) => skill.name));
         }}
         onBlur={() => { compositionRef.current = false; setComposing(false); }}
         onKeyDown={(event) => {
+          if (event.key === "Backspace" || event.key === "Delete") tracker.current.correct();
+          if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) tracker.current.begin(performance.now());
           if (event.key !== "Enter" || !enabled) return;
           // keyCode 229 covers IME confirmation even when compositionend fires first.
           if (compositionRef.current || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
@@ -58,7 +74,7 @@ export function SkillInput({ enabled, inputRef, onCast }: Props) {
           // Clear the DOM too: consecutive Enter events cannot resubmit stale state.
           event.currentTarget.value = "";
           setValue("");
-          onCast(submitted);
+          onCast(submitted, tracker.current.finish(performance.now()));
         }} />
       <span className="text-xs text-slate-400">{composing ? "한글 조합 중" : "ENTER ↵"}</span>
     </div>

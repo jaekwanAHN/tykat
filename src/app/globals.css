@@ -5,7 +5,7 @@ body { margin: 0; }
 button { cursor: pointer; transition: background .15s, border-color .15s; }
 button:focus-visible { outline: 2px solid #bae6fd; outline-offset: 4px; }
 button:disabled { cursor: not-allowed; opacity: .4; }
-.arena { height: clamp(340px, calc(100vh - 330px), 700px); }
+.arena { height: clamp(340px, calc(100vh - 370px), 700px); }
 .eyebrow { color: #8b96ac; font-size: 10px; letter-spacing: .2em; }
 .secondary { border: 1px solid #475569; border-radius: 6px; padding: 10px 20px; font-size: 13px; }
 .secondary:hover { background: #242e40; }

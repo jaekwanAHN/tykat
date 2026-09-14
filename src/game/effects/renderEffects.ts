@@ -40,6 +40,14 @@ export function renderEffects(ctx: CanvasRenderingContext2D, effects: EffectSyst
   const latestAttack = effects.visuals.findLast((visual) => "name" in visual.event);
   for (const visual of effects.visuals) {
     const { event, age, lane } = visual;
+    if (event.type === "perfect") {
+      ctx.globalAlpha = Math.min(1, (1000 - age) / 350);
+      ctx.font = "900 38px Arial, sans-serif";
+      ctx.fillStyle = "#fde68a"; ctx.strokeStyle = "#080b12"; ctx.lineWidth = 5;
+      ctx.strokeText("PERFECT!", 500, 285 - age * .015);
+      ctx.fillText("PERFECT!", 500, 285 - age * .015);
+      continue;
+    }
     const attack = "name" in event;
     const heavy = event.type === "heavySlash";
     ctx.globalAlpha = Math.min(1, (1000 - age) / 350);

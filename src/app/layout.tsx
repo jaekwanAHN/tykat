@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SKILL / CAST — 기술명 타이핑 액션",
-  description: "기술명을 외쳐 전투하는 타이핑 액션 게임 · Phase 3 전투 피드백",
+  description: "기술명을 외쳐 전투하는 타이핑 액션 게임 · Phase 4 Perfect Cast",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

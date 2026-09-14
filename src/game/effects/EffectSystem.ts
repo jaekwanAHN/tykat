@@ -20,6 +20,7 @@ export class EffectSystem {
     }
     this.visuals.push({ event, age: 0, life: 1000, lane: this.nextLane++ % 3 });
     if (this.visuals.length > MAX_EFFECTS) this.visuals.shift();
+    if (event.type === "perfect") return;
     const heavy = event.type === "heavySlash";
     const heal = event.type === "heal";
     const attack = "name" in event;
