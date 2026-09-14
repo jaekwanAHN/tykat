@@ -16,7 +16,6 @@ test("start, frozen victory results, deliberate retry and gameover results", asy
   await expect(result.getByRole("heading")).toBeFocused();
   const values = result.locator("dd");
   await expect(values).toHaveText(["00:01", "3", "120", "100.0%", "3"]);
-  await page.keyboard.press("Enter");
   await page.clock.runFor(6000);
   await expect(values).toHaveText(["00:01", "3", "120", "100.0%", "3"]);
   await page.screenshot({ path: "test-results/phase-5-victory.png" });

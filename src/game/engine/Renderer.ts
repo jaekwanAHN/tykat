@@ -1,4 +1,6 @@
-import { ENEMY_ATTACK_INTERVAL, type BattleSnapshot } from "./GameEngine";
+import { type BattleSnapshot } from "./GameEngine";
+import { getStage, STAGE_COUNT } from "../data/stages";
+import { renderEnemy } from "./renderEnemy";
 import type { EffectSystem } from "../effects/EffectSystem";
 import { renderEffects } from "../effects/renderEffects";
 
@@ -8,6 +10,7 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
   ctx.save();
   ctx.scale(width / 1000, height / 520);
   const motion = effects.motion;
+  const enemy = getStage(state.stage);
   ctx.translate(Math.sin(time * .13) * motion.shake, Math.cos(time * .17) * motion.shake);
   const glow = ctx.createRadialGradient(500, 225, 10, 500, 225, 430);
   glow.addColorStop(0, "#24243a"); glow.addColorStop(1, "#0b0e17");
@@ -25,24 +28,9 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
 
   const bob = state.status === "playing" ? Math.sin(time / 400) * 3 : 0;
   const warning = state.status === "playing" && state.attackRemaining < 1500;
-  // Ogre: heavy body, angular horns and luminous eyes, without image assets.
   ctx.save(); ctx.translate(500 + motion.enemyX, 233 + bob);
   ctx.globalAlpha = state.enemyHp > 0 ? 1 : 0.25;
-  ctx.fillStyle = "#080a10"; ctx.beginPath(); ctx.ellipse(0, 99 - bob, 93, 17, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = warning ? "#8b4653" : "#665774";
-  ctx.beginPath(); ctx.roundRect(-65, -50, 130, 134, 32); ctx.fill();
-  ctx.fillStyle = warning ? "#b35c68" : "#85708f";
-  ctx.beginPath(); ctx.roundRect(-47, -91, 94, 87, 23); ctx.fill();
-  ctx.fillStyle = "#c9b9b7";
-  for (const side of [-1, 1]) {
-    ctx.beginPath(); ctx.moveTo(side * 28, -81); ctx.lineTo(side * 55, -119); ctx.lineTo(side * 48, -61); ctx.fill();
-    ctx.fillStyle = warning ? "#ffb09d" : "#fb967e";
-    ctx.fillRect(side < 0 ? -30 : 13, -56, 17, 5);
-    ctx.fillStyle = "#c9b9b7";
-  }
-  ctx.fillStyle = "#4b405a";
-  ctx.fillRect(-83, -26, 27, 85); ctx.fillRect(56, -26, 27, 85);
-  ctx.fillRect(-51, 62, 36, 34); ctx.fillRect(15, 62, 36, 34);
+  renderEnemy(ctx, enemy, warning);
   ctx.restore();
 
   ctx.save(); ctx.translate(500 + motion.playerX, 437 + motion.playerY);
@@ -56,7 +44,7 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
 
   // A quiet arena ring mirrors the DOM attack gauge.
   ctx.strokeStyle = warning ? "#fb967e" : "#665774"; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.ellipse(500, 340, 250, 52, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.attackRemaining / ENEMY_ATTACK_INTERVAL); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(500, 340, 250, 52, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.attackRemaining / enemy.attackInterval); ctx.stroke();
   renderEffects(ctx, effects);
   ctx.restore();
   if (state.status === "victory" || state.status === "gameover") {
@@ -64,7 +52,7 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
     ctx.fillStyle = "#080b12aa"; ctx.fillRect(0, 165, 1000, 115);
     ctx.textAlign = "center"; ctx.font = "900 58px Arial, sans-serif";
     ctx.fillStyle = state.status === "victory" ? "#ffddab" : "#ff8fa5";
-    ctx.fillText(state.status === "victory" ? "VICTORY" : "GAME OVER", 500, 240);
+    ctx.fillText(state.status === "victory" ? (state.stage === STAGE_COUNT ? "ALL CLEAR" : "VICTORY") : "GAME OVER", 500, 240);
     ctx.restore();
   }
 }

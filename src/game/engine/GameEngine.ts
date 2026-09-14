@@ -1,6 +1,7 @@
 import { applyHeal, matchSkill, skills } from "../data/skills";
 import { calculateAccuracy, calculateDamage, calculatePerfect, calculateWpm, countCorrectCharacters, type CastResult, type TypingAttempt } from "../../lib/typing/metrics";
 import type { CombatEffect } from "../effects/CombatEffect";
+import { getStage, STAGE_COUNT } from "../data/stages";
 
 export const PLAYER_MAX_HP = 100;
 export const ENEMY_MAX_HP = 200;
@@ -27,14 +28,16 @@ export type BattleSnapshot = {
   lastCast: CastResult | null;
   elapsedMs: number;
   paused: boolean;
+  stage: number;
 };
 
 export function applyDamage(hp: number, damage: number): number {
   return Math.max(0, hp - Math.max(0, damage));
 }
 
-export function initialBattle(): BattleSnapshot {
-  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null, elapsedMs: 0, paused: false };
+export function initialBattle(stage = 1): BattleSnapshot {
+  const enemy = getStage(stage);
+  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: enemy.maxHp, attackRemaining: enemy.attackInterval, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null, elapsedMs: 0, paused: false, stage };
 }
 
 // Battle calculations live here; neither React nor Canvas is a dependency.
@@ -52,12 +55,18 @@ export class GameEngine {
 
   get snapshot(): BattleSnapshot { return { ...this.state }; }
 
-  start() {
-    this.state = { ...initialBattle(), status: "playing" };
+  start(stage = this.state.stage) {
+    this.state = { ...initialBattle(stage), status: "playing" };
     this.hudElapsed = 0;
     this.totalCharacters = 0; this.correctCharacters = 0; this.typedCharacters = 0; this.typingDuration = 0;
     this.onEffect({ type: "reset" });
     this.publish();
+  }
+
+  nextStage(): boolean {
+    if (this.state.status !== "victory" || this.state.stage >= STAGE_COUNT) return false;
+    this.start(this.state.stage + 1);
+    return true;
   }
 
   setPaused(paused: boolean) {
@@ -108,7 +117,8 @@ export class GameEngine {
   update(deltaMs: number) {
     if (this.state.status !== "playing" || this.state.paused || !Number.isFinite(deltaMs)) return;
     const elapsed = Math.max(0, Math.min(deltaMs, MAX_DELTA_MS));
-    this.state.elapsedMs += this.state.playerHp <= ENEMY_ATTACK_DAMAGE && this.state.evadeRemaining < this.state.attackRemaining
+    const enemy = getStage(this.state.stage);
+    this.state.elapsedMs += this.state.playerHp <= enemy.attackDamage && this.state.evadeRemaining < this.state.attackRemaining
       ? Math.min(elapsed, this.state.attackRemaining) : elapsed;
     // Compare expiry at the actual attack instant, before consuming this frame.
     const dodged = this.state.evadeRemaining > 0 && this.state.evadeRemaining >= this.state.attackRemaining;
@@ -120,12 +130,12 @@ export class GameEngine {
         this.setFeedback("DODGE! · 공격 회피 성공");
         this.onEffect({ type: "dodge" });
       } else {
-        this.state.playerHp = applyDamage(this.state.playerHp, ENEMY_ATTACK_DAMAGE);
+        this.state.playerHp = applyDamage(this.state.playerHp, enemy.attackDamage);
         this.state.combo = 0;
-        this.setFeedback(`피격 · -${ENEMY_ATTACK_DAMAGE} HP`);
-        this.onEffect({ type: "hit", amount: ENEMY_ATTACK_DAMAGE });
+        this.setFeedback(`피격 · -${enemy.attackDamage} HP`);
+        this.onEffect({ type: "hit", amount: enemy.attackDamage });
       }
-      this.state.attackRemaining += ENEMY_ATTACK_INTERVAL;
+      this.state.attackRemaining += enemy.attackInterval;
       if (this.state.playerHp === 0) this.state.status = "gameover";
       this.publish();
     } else if (this.hudElapsed >= HUD_INTERVAL_MS) {

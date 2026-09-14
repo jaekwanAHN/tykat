@@ -63,5 +63,5 @@ export function GameCanvas({ onReady, onChange, onEffect }: Props) {
     };
   }, [onChange, onReady, onEffect]);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" role="img" aria-label="상단의 오우거와 하단의 검사 플레이어가 마주 보는 전투장" />;
+  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" role="img" aria-label="현재 스테이지의 적과 검사 플레이어가 마주 보는 전투장" />;
 }

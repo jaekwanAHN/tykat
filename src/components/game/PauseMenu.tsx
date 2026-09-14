@@ -28,7 +28,7 @@ export function PauseMenu({ onResume, onRestart }: { onResume: () => void; onRes
     <p className="mt-3 text-sm leading-6 text-slate-400">전투와 음악이 멈췄습니다.<br />입력하던 기술은 그대로 이어갈 수 있습니다.</p>
     <div className="mt-6 flex flex-col gap-3">
       <button className="attack justify-center" onClick={onResume}>이어하기 · Esc</button>
-      <button className="secondary" onClick={onRestart}>처음부터 다시 시작</button>
+      <button className="secondary" onClick={onRestart}>현재 스테이지 다시 시작</button>
     </div>
     <p className="mt-4 text-center text-xs text-slate-400">↑ ↓ 이동 · Enter 선택 · Esc 이어하기</p>
   </dialog>;
