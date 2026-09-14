@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { GameEngine, type BattleSnapshot } from "@/game/engine/GameEngine";
+import { GameEngine, MAX_DELTA_MS, type BattleSnapshot } from "@/game/engine/GameEngine";
+import { EffectSystem } from "@/game/effects/EffectSystem";
 import { renderBattle } from "@/game/engine/Renderer";
 
 type Props = {
@@ -16,7 +17,8 @@ export function GameCanvas({ onReady, onChange }: Props) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const engine = new GameEngine(onChange);
+    const effects = new EffectSystem();
+    const engine = new GameEngine(onChange, (event) => effects.play(event));
     onReady(engine);
     let width = 0, height = 0, dpr = 0;
     let frameId = 0;
@@ -38,9 +40,12 @@ export function GameCanvas({ onReady, onChange }: Props) {
       const delta = previous === null ? 0 : timestamp - previous;
       previous = timestamp;
       if (!document.hidden) {
-        engine.update(delta);
-        animationTime += Math.max(0, Math.min(delta, 100));
-        renderBattle(ctx, width, height, engine.snapshot, animationTime);
+        const elapsed = Math.max(0, Math.min(delta, MAX_DELTA_MS));
+        effects.update(elapsed);
+        engine.update(elapsed);
+        animationTime += elapsed;
+        // Finish the killing blow animation even after battle updates stop.
+        renderBattle(ctx, width, height, engine.snapshot, animationTime, effects);
       }
       frameId = requestAnimationFrame(loop);
     };

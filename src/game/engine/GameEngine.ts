@@ -1,4 +1,5 @@
 import { applyHeal, matchSkill } from "../data/skills";
+import type { CombatEffect } from "../effects/CombatEffect";
 
 export const PLAYER_MAX_HP = 100;
 export const ENEMY_MAX_HP = 200;
@@ -31,13 +32,17 @@ export function initialBattle(): BattleSnapshot {
 export class GameEngine {
   private state = initialBattle();
   private hudElapsed = 0;
-  constructor(private readonly onChange: (state: BattleSnapshot) => void) {}
+  constructor(
+    private readonly onChange: (state: BattleSnapshot) => void,
+    private readonly onEffect: (effect: CombatEffect) => void = () => {},
+  ) {}
 
   get snapshot(): BattleSnapshot { return { ...this.state }; }
 
   start() {
     this.state = { ...initialBattle(), status: "playing" };
     this.hudElapsed = 0;
+    this.onEffect({ type: "reset" });
     this.publish();
   }
 
@@ -49,14 +54,17 @@ export class GameEngine {
     } else if (skill.type === "attack") {
       this.state.enemyHp = applyDamage(this.state.enemyHp, skill.damage);
       this.setFeedback(`${skill.name} · ${skill.damage} DAMAGE`);
+      this.onEffect({ type: skill.effect, amount: skill.damage, name: skill.name });
       if (this.state.enemyHp === 0) this.state.status = "victory";
     } else if (skill.type === "heal") {
       const previousHp = this.state.playerHp;
       this.state.playerHp = applyHeal(previousHp, skill.heal, PLAYER_MAX_HP);
       this.setFeedback(`치유 · +${this.state.playerHp - previousHp} HP`);
+      this.onEffect({ type: "heal", amount: this.state.playerHp - previousHp });
     } else {
       this.state.evadeRemaining = EVADE_DURATION;
       this.setFeedback("회피 · 1초 동안 공격 무효");
+      this.onEffect({ type: "evade" });
     }
     this.publish();
   }
@@ -72,9 +80,11 @@ export class GameEngine {
     if (this.state.attackRemaining <= 0) {
       if (dodged) {
         this.setFeedback("DODGE! · 공격 회피 성공");
+        this.onEffect({ type: "dodge" });
       } else {
         this.state.playerHp = applyDamage(this.state.playerHp, ENEMY_ATTACK_DAMAGE);
         this.setFeedback(`피격 · -${ENEMY_ATTACK_DAMAGE} HP`);
+        this.onEffect({ type: "hit", amount: ENEMY_ATTACK_DAMAGE });
       }
       this.state.attackRemaining += ENEMY_ATTACK_INTERVAL;
       if (this.state.playerHp === 0) this.state.status = "gameover";

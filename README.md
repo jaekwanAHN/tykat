@@ -1,6 +1,6 @@
 # SKILL / CAST
 
-기술명 타이핑 액션 게임. 현재 **Phase 2 — Typing**까지 구현했습니다.
+기술명 타이핑 액션 게임. 현재 **Phase 3 — Combat Feedback**까지 구현했습니다.
 
 ## 실행
 
@@ -21,7 +21,9 @@ http://localhost:3000 에서 전투 시작 → 기술명을 정확히 입력하�
 한글 조합 확정 Enter는 발동하지 않습니다. 조합을 끝낸 뒤 Enter를 한 번 더 누르세요.
 시작/초기화 시 입력창에 포커스하며, 전투장 클릭이나 창 복귀로 포커스를 회복합니다. Tab 이동은 가로채지 않습니다.
 어느 한쪽 HP가 0이면 전투를 멈추며 전투 초기화 버튼으로 재시작합니다.
-Canvas 스킬 효과는 Phase 3, Perfect/Combo/통계는 Phase 4, 정식 결과 화면은 Phase 5에서 구현합니다.
+Canvas에 참격 궤적, 화염 파티클, 폭염연옥참 교차 참격/flash/강한 흔들림, 데미지 숫자와 기술명을 표시합니다.
+피격 시 붉은 flash와 밀림, 치유 시 실제 회복량과 상승 파티클, 회피 시 옆 이동과 성공 시 DODGE!가 표시됩니다.
+Perfect/Combo/통계는 Phase 4, 정식 결과 화면은 Phase 5에서 구현합니다.
 
 ## 구조
 
@@ -31,6 +33,9 @@ Canvas 스킬 효과는 Phase 3, Perfect/Combo/통계는 Phase 4, 정식 결과 
 - `src/components/game/Game.tsx`: React HP/타이머 HUD와 전투 조작
 - `src/components/game/SkillInput.tsx`: 기술명 입력, IME 처리, 부분 일치 강조
 - `src/game/data/skills.ts`: 5개 기술 데이터, 정확한 매칭과 치유 계산
+- `src/game/effects/`: 전투 이벤트 타입, 효과 수명/파티클/움직임과 Canvas 효과 렌더링
+
+전투 이벤트를 Canvas lifecycle의 EffectSystem에 직접 전달합니다. UI를 흔들지 않으며, 전투 종료 후에도 마지막 효과는 끝까지 재생합니다. 초기화 시 효과를 비우고, 연속 사용 시 파티클 240개/효과 24개로 제한합니다. 같은 이벤트 지점에 추후 효과음을 연결할 수 있습니다.
 
 HUD 타이머는 최대 초당 10회, HP/상태 변경은 즉시 전달합니다. 프레임 시간은 최대 100ms로 제한하고 숨겨진 탭의 전투 시간은 정지합니다. 긴 프레임 지연에는 실제 벽시계보다 전투 시간이 느려질 수 있습니다.
 

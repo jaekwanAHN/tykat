@@ -21,7 +21,7 @@ export function Game() {
     }}>
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-black tracking-[.16em]">SKILL <span className="text-orange-300">/</span> CAST</h1>
-        <span className="text-xs tracking-[.15em] text-slate-400">PHASE 02 <span className="mx-2 text-slate-600">/</span> TYPING COMBAT</span>
+        <span className="text-xs tracking-[.15em] text-slate-400">PHASE 03 <span className="mx-2 text-slate-600">/</span> COMBAT FEEDBACK</span>
       </header>
       <p className="mb-3 text-sm text-amber-200 lg:hidden">이 게임은 키보드를 사용하는 Desktop 환경을 권장합니다.</p>
       <section aria-label="전투" className="arena relative min-h-[340px] overflow-hidden rounded-t-xl border border-slate-700/60">

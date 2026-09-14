@@ -1,13 +1,17 @@
 import { ENEMY_ATTACK_INTERVAL, type BattleSnapshot } from "./GameEngine";
+import type { EffectSystem } from "../effects/EffectSystem";
+import { renderEffects } from "../effects/renderEffects";
 
 // Coordinates use a fixed design space, scaled to the available canvas.
-export function renderBattle(ctx: CanvasRenderingContext2D, width: number, height: number, state: BattleSnapshot, time: number) {
+export function renderBattle(ctx: CanvasRenderingContext2D, width: number, height: number, state: BattleSnapshot, time: number, effects: EffectSystem) {
   ctx.clearRect(0, 0, width, height);
   ctx.save();
   ctx.scale(width / 1000, height / 520);
+  const motion = effects.motion;
+  ctx.translate(Math.sin(time * .13) * motion.shake, Math.cos(time * .17) * motion.shake);
   const glow = ctx.createRadialGradient(500, 225, 10, 500, 225, 430);
   glow.addColorStop(0, "#24243a"); glow.addColorStop(1, "#0b0e17");
-  ctx.fillStyle = glow; ctx.fillRect(0, 0, 1000, 520);
+  ctx.fillStyle = glow; ctx.fillRect(-20, -20, 1040, 560);
 
   ctx.strokeStyle = "#252938"; ctx.lineWidth = 1;
   for (let x = -500; x <= 1500; x += 100) {
@@ -22,7 +26,7 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
   const bob = state.status === "playing" ? Math.sin(time / 400) * 3 : 0;
   const warning = state.status === "playing" && state.attackRemaining < 1500;
   // Ogre: heavy body, angular horns and luminous eyes, without image assets.
-  ctx.save(); ctx.translate(500, 233 + bob);
+  ctx.save(); ctx.translate(500 + motion.enemyX, 233 + bob);
   ctx.globalAlpha = state.enemyHp > 0 ? 1 : 0.25;
   ctx.fillStyle = "#080a10"; ctx.beginPath(); ctx.ellipse(0, 99 - bob, 93, 17, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = warning ? "#8b4653" : "#665774";
@@ -41,7 +45,7 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
   ctx.fillRect(-51, 62, 36, 34); ctx.fillRect(15, 62, 36, 34);
   ctx.restore();
 
-  ctx.save(); ctx.translate(500, 437);
+  ctx.save(); ctx.translate(500 + motion.playerX, 437 + motion.playerY);
   ctx.globalAlpha = state.playerHp > 0 ? 1 : 0.25;
   ctx.fillStyle = "#050910"; ctx.beginPath(); ctx.ellipse(0, 31, 44, 10, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#719dba"; ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(-25, 27); ctx.lineTo(25, 27); ctx.closePath(); ctx.fill();
@@ -53,5 +57,6 @@ export function renderBattle(ctx: CanvasRenderingContext2D, width: number, heigh
   // A quiet arena ring mirrors the DOM attack gauge.
   ctx.strokeStyle = warning ? "#fb967e" : "#665774"; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.ellipse(500, 340, 250, 52, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.attackRemaining / ENEMY_ATTACK_INTERVAL); ctx.stroke();
+  renderEffects(ctx, effects);
   ctx.restore();
 }
