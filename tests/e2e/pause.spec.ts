@@ -40,7 +40,7 @@ test("tab icon, Escape pauses timers/audio and preserves typing through resume a
   await expect(page.getByTestId("enemy-hp")).toHaveText("162 / 200");
   await expect(page.getByTestId("perfect-count")).toHaveText("PERFECT 1");
   await page.getByRole("button", { name: "일시정지 · Esc", exact: true }).click();
-  await dialog.getByRole("button", { name: "처음부터 다시 시작" }).click();
+  await dialog.getByRole("button", { name: "현재 스테이지 다시 시작" }).click();
   await expect(input).toBeFocused(); await expect(input).toHaveValue("");
   await expect(page.getByTestId("enemy-hp")).toHaveText("200 / 200");
   await expect(page.getByTestId("perfect-count")).toHaveText("PERFECT 0");
