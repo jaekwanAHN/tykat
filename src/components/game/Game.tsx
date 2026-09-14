@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GameAudio } from "@/game/audio/GameAudio";
+import type { CombatEffect } from "@/game/effects/CombatEffect";
+import type { BattleSnapshot, GameStatus } from "@/game/engine/GameEngine";
 import { GameCanvas } from "./GameCanvas";
 import { SkillInput } from "./SkillInput";
 import { ResultScreen } from "./ResultScreen";
@@ -10,13 +13,31 @@ import { ENEMY_ATTACK_INTERVAL, ENEMY_MAX_HP, GameEngine, initialBattle, PLAYER_
 export function Game() {
   const engine = useRef<GameEngine | null>(null);
   const [battle, setBattle] = useState(initialBattle);
+  const audio = useRef<GameAudio | null>(null);
+  const statusRef = useRef<GameStatus>("idle");
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [effectsEnabled, setEffectsEnabled] = useState(true);
+  useEffect(() => {
+    const sound = new GameAudio(); audio.current = sound;
+    const visibility = () => sound.visibility(document.hidden);
+    document.addEventListener("visibilitychange", visibility);
+    return () => { document.removeEventListener("visibilitychange", visibility); sound.dispose(); audio.current = null; };
+  }, []);
+  const onEffect = useCallback((event: CombatEffect) => {
+    if (event.type !== "reset") audio.current?.play(event.type);
+  }, []);
+  const onChange = useCallback((snapshot: BattleSnapshot) => {
+    if (snapshot.status !== statusRef.current && (snapshot.status === "victory" || snapshot.status === "gameover")) audio.current?.finish(snapshot.status === "victory");
+    statusRef.current = snapshot.status;
+    setBattle(snapshot);
+  }, []);
   const [round, setRound] = useState(0);
   const [ready, setReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const onReady = useCallback((value: GameEngine | null) => { engine.current = value; setReady(value !== null); }, []);
   const playing = battle.status === "playing";
   const ended = battle.status === "victory" || battle.status === "gameover";
-  const restart = () => { engine.current?.start(); setRound((value) => value + 1); };
+  const restart = () => { audio.current?.start(); engine.current?.start(); setRound((value) => value + 1); };
   const message = { idle: "전투 준비", playing: "적의 공격 타이밍을 확인하세요", victory: "오우거 처치 · 전투 종료", gameover: "플레이어 쓰러짐 · 전투 종료" }[battle.status];
 
   return (
@@ -25,11 +46,15 @@ export function Game() {
     }}>
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-black tracking-[.16em]">SKILL <span className="text-orange-300">/</span> CAST</h1>
-        <span className="text-xs tracking-[.15em] text-slate-400">STAGE 01 <span className="mx-2 text-slate-600">/</span> {formatTime(battle.elapsedMs)}</span>
+        <div className="flex items-center gap-4">
+          <button className="text-xs text-slate-300" aria-label="배경음악" aria-pressed={musicEnabled} onClick={() => { audio.current?.setMusic(!musicEnabled); setMusicEnabled(!musicEnabled); if (playing) inputRef.current?.focus(); }}>BGM {musicEnabled ? "ON" : "OFF"}</button>
+          <button className="text-xs text-slate-300" aria-label="효과음" aria-pressed={effectsEnabled} onClick={() => { audio.current?.setEffects(!effectsEnabled); setEffectsEnabled(!effectsEnabled); if (playing) inputRef.current?.focus(); }}>SFX {effectsEnabled ? "ON" : "OFF"}</button>
+          <span className="text-xs tracking-[.15em] text-slate-400">STAGE 01 / {formatTime(battle.elapsedMs)}</span>
+        </div>
       </header>
       <p className="mb-3 text-sm text-amber-200 lg:hidden">이 게임은 키보드를 사용하는 Desktop 환경을 권장합니다.</p>
       <section aria-label="전투" className="arena relative min-h-[340px] overflow-hidden rounded-t-xl border border-slate-700/60">
-        <GameCanvas onReady={onReady} onChange={setBattle} />
+        <GameCanvas onReady={onReady} onChange={onChange} onEffect={onEffect} />
         {battle.status === "idle" && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#080b12]/80 px-6 text-center">
           <p className="eyebrow">TYPE YOUR POWER</p>
           <h2 className="mt-3 text-3xl font-black text-orange-100">기술명을 외쳐라</h2>

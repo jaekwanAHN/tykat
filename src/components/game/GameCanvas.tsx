@@ -4,13 +4,15 @@ import { useEffect, useRef } from "react";
 import { GameEngine, MAX_DELTA_MS, type BattleSnapshot } from "@/game/engine/GameEngine";
 import { EffectSystem } from "@/game/effects/EffectSystem";
 import { renderBattle } from "@/game/engine/Renderer";
+import type { CombatEffect } from "@/game/effects/CombatEffect";
 
 type Props = {
   onReady: (engine: GameEngine | null) => void;
   onChange: (snapshot: BattleSnapshot) => void;
+  onEffect: (event: CombatEffect) => void;
 };
 
-export function GameCanvas({ onReady, onChange }: Props) {
+export function GameCanvas({ onReady, onChange, onEffect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,7 +20,7 @@ export function GameCanvas({ onReady, onChange }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const effects = new EffectSystem();
-    const engine = new GameEngine(onChange, (event) => effects.play(event));
+    const engine = new GameEngine(onChange, (event) => { effects.play(event); onEffect(event); });
     onReady(engine);
     let width = 0, height = 0, dpr = 0;
     let frameId = 0;
@@ -59,7 +61,7 @@ export function GameCanvas({ onReady, onChange }: Props) {
       document.removeEventListener("visibilitychange", visibility);
       onReady(null);
     };
-  }, [onChange, onReady]);
+  }, [onChange, onReady, onEffect]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" role="img" aria-label="상단의 오우거와 하단의 검사 플레이어가 마주 보는 전투장" />;
 }

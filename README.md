@@ -38,6 +38,12 @@ Canvas에 참격 궤적, 화염 파티클, 폭염연옥참 교차 참격/flash/�
 
 ## 구조
 
+### 사운드
+
+전투 시작 클릭으로 Web Audio를 활성화합니다. BGM은 128 BPM의 4마디 루프(킥/스네어/하이햇, 엇박 베이스, 반복 신스 훅)이며 외부 음원 파일 없이 합성합니다. 기술별 효과음과 Perfect/승패 멜로디도 합성합니다.
+상단 BGM/SFX 버튼으로 각각 음소거할 수 있습니다. BGM은 전투 종료 시 정지하고 재시작 시 처음부터 재생합니다. 숨겨진 탭에서는 오디오 컨텍스트를 일시 정지합니다. 오디오 미지원/재생 거부 상황에서도 전투는 계속 동작합니다.
+`src/game/audio/synth.ts`에서 패턴과 음색, `GameAudio.ts`에서 BGM(.3)/SFX(.55) 볼륨을 조정할 수 있습니다. 동시에 재생되는 효과음은 24개로 제한합니다.
+
 - `src/game/engine/GameEngine.ts`: DOM에 의존하지 않는 전투 상태와 시간/피해 계산
 - `src/game/engine/Renderer.ts`: 도형 기반 Canvas 2D 장면
 - `src/components/game/GameCanvas.tsx`: RAF, ResizeObserver, DPR, lifecycle
