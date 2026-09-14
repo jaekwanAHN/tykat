@@ -11,6 +11,8 @@ export class GameAudio {
   private musicEnabled = true;
   private effectsEnabled = true;
   private playing = false;
+  private paused = false;
+  private hidden = false;
 
   // Called from a user gesture; no audio is created on page load.
   unlock() {
@@ -23,7 +25,7 @@ export class GameAudio {
         this.effectsGain = this.context.createGain(); this.effectsGain.gain.value = this.effectsEnabled ? .55 : 0;
         this.musicGain.connect(compressor); this.effectsGain.connect(compressor);
       }
-      void this.context.resume().catch(() => {});
+      this.syncSuspension();
     } catch { /* Audio unavailable: combat remains playable. */ }
   }
 
@@ -35,6 +37,7 @@ export class GameAudio {
   }
 
   start() {
+    this.paused = false;
     this.unlock(); this.playing = true;
     this.stopMusic();
     for (const voice of this.voices) voice.stop();
@@ -80,8 +83,17 @@ export class GameAudio {
     if (this.effectsGain && this.context) this.effectsGain.gain.setTargetAtTime(enabled ? .55 : 0, this.context.currentTime, .015);
   }
   visibility(hidden: boolean) {
+    this.hidden = hidden;
+    this.syncSuspension();
+  }
+  setPaused(paused: boolean) {
+    if (this.paused === paused) return;
+    this.paused = paused;
+    this.syncSuspension();
+  }
+  private syncSuspension() {
     if (!this.context) return;
-    void (hidden ? this.context.suspend() : this.context.resume()).catch(() => {});
+    void (this.hidden || this.paused ? this.context.suspend() : this.context.resume()).catch(() => {});
   }
   dispose() {
     this.stopMusic();

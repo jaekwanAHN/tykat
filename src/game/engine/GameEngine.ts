@@ -26,6 +26,7 @@ export type BattleSnapshot = {
   perfectCasts: number;
   lastCast: CastResult | null;
   elapsedMs: number;
+  paused: boolean;
 };
 
 export function applyDamage(hp: number, damage: number): number {
@@ -33,7 +34,7 @@ export function applyDamage(hp: number, damage: number): number {
 }
 
 export function initialBattle(): BattleSnapshot {
-  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null, elapsedMs: 0 };
+  return { status: "idle", playerHp: PLAYER_MAX_HP, enemyHp: ENEMY_MAX_HP, attackRemaining: ENEMY_ATTACK_INTERVAL, evadeRemaining: 0, feedback: "", feedbackId: 0, combo: 0, maxCombo: 0, accuracy: 100, wpm: 0, perfectCasts: 0, lastCast: null, elapsedMs: 0, paused: false };
 }
 
 // Battle calculations live here; neither React nor Canvas is a dependency.
@@ -59,8 +60,14 @@ export class GameEngine {
     this.publish();
   }
 
+  setPaused(paused: boolean) {
+    if (this.state.status !== "playing" || this.state.paused === paused) return;
+    this.state.paused = paused;
+    this.publish();
+  }
+
   cast(input: string, attempt?: TypingAttempt) {
-    if (this.state.status !== "playing") return;
+    if (this.state.status !== "playing" || this.state.paused) return;
     const skill = matchSkill(input);
     const correct = countCorrectCharacters(input, skills.map((candidate) => candidate.name));
     const total = [...input].length + Math.max(0, attempt?.corrections ?? 0);
@@ -99,7 +106,7 @@ export class GameEngine {
   }
 
   update(deltaMs: number) {
-    if (this.state.status !== "playing" || !Number.isFinite(deltaMs)) return;
+    if (this.state.status !== "playing" || this.state.paused || !Number.isFinite(deltaMs)) return;
     const elapsed = Math.max(0, Math.min(deltaMs, MAX_DELTA_MS));
     this.state.elapsedMs += this.state.playerHp <= ENEMY_ATTACK_DAMAGE && this.state.evadeRemaining < this.state.attackRemaining
       ? Math.min(elapsed, this.state.attackRemaining) : elapsed;

@@ -7,15 +7,17 @@ import type { TypingAttempt } from "@/lib/typing/metrics";
 
 type Props = {
   enabled: boolean;
+  paused?: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   onCast: (input: string, attempt: TypingAttempt) => void;
 };
 
-export function SkillInput({ enabled, inputRef, onCast }: Props) {
+export function SkillInput({ enabled, paused = false, inputRef, onCast }: Props) {
   const [value, setValue] = useState("");
   const [composing, setComposing] = useState(false);
   const compositionRef = useRef(false);
   const tracker = useRef(new AttemptTracker());
+  useEffect(() => { tracker.current.setPaused(paused, performance.now()); }, [paused]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -40,7 +42,7 @@ export function SkillInput({ enabled, inputRef, onCast }: Props) {
     <div className="flex items-center gap-3 rounded-md border border-slate-600 bg-[#080b12] px-4 focus-within:border-orange-300">
       <input id="skill-input" ref={inputRef} value={value} disabled={!enabled}
         className="min-w-0 flex-1 py-3 text-lg outline-none disabled:opacity-40"
-        placeholder={enabled ? "기술명을 입력하세요" : "전투를 시작하세요"}
+        placeholder={paused ? "일시정지 중" : enabled ? "기술명을 입력하세요" : "전투를 시작하세요"}
         autoComplete="off" autoCorrect="off" spellCheck={false} maxLength={40}
         aria-describedby="input-help"
         onChange={(event) => {

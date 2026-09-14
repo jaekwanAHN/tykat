@@ -5,6 +5,15 @@ export class AttemptTracker {
   private corrections = 0;
   private assisted = false;
   private hadError = false;
+  private pausedAt: number | null = null;
+
+  setPaused(paused: boolean, now: number) {
+    if (paused) this.pausedAt ??= now;
+    else if (this.pausedAt !== null) {
+      if (this.started !== null) this.started += Math.max(0, now - this.pausedAt);
+      this.pausedAt = null;
+    }
+  }
 
   begin(now: number) { this.started ??= now; }
   change(now: number) {

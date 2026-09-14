@@ -42,7 +42,7 @@ export function GameCanvas({ onReady, onChange, onEffect }: Props) {
       const delta = previous === null ? 0 : timestamp - previous;
       previous = timestamp;
       if (!document.hidden) {
-        const elapsed = Math.max(0, Math.min(delta, MAX_DELTA_MS));
+        const elapsed = engine.snapshot.paused ? 0 : Math.max(0, Math.min(delta, MAX_DELTA_MS));
         effects.update(elapsed);
         engine.update(elapsed);
         animationTime += elapsed;
