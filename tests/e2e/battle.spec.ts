@@ -1,0 +1,38 @@
+import { expect, test } from "@playwright/test";
+
+test("start, attack, enemy timer, terminal states, reset and responsive canvas", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.clock.install();
+  const attack = page.getByRole("button", { name: /임시 공격/ });
+  await expect(attack).toBeDisabled();
+  await page.getByRole("button", { name: "전투 시작" }).click();
+  await expect(page.getByTestId("player-hp")).toHaveText("100 / 100");
+  await expect(page.getByTestId("enemy-hp")).toHaveText("200 / 200");
+  await attack.click();
+  await expect(page.getByTestId("enemy-hp")).toHaveText("190 / 200");
+  await page.clock.runFor(5100);
+  await expect(page.getByTestId("player-hp")).toHaveText("80 / 100");
+  for (let i = 0; i < 19; i++) await attack.click();
+  await expect(page.getByRole("status")).toHaveText("오우거 처치 · 전투 종료");
+  await expect(attack).toBeDisabled();
+  await page.clock.runFor(6000);
+  await expect(page.getByTestId("player-hp")).toHaveText("80 / 100");
+  await page.getByRole("button", { name: "전투 초기화" }).click();
+  await page.clock.runFor(25100);
+  await expect(page.getByRole("status")).toHaveText("플레이어 쓰러짐 · 전투 종료");
+  await expect(attack).toBeDisabled();
+  await page.getByRole("button", { name: "전투 초기화" }).click();
+  await expect(page.getByTestId("player-hp")).toHaveText("100 / 100");
+  await expect(page.getByTestId("enemy-hp")).toHaveText("200 / 200");
+  const canvas = page.locator("canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((node) => node instanceof HTMLCanvasElement && node.width === Math.round(node.getBoundingClientRect().width * devicePixelRatio))).toBe(true);
+  await page.screenshot({ path: "test-results/phase-1-desktop.png" });
+  await page.setViewportSize({ width: 900, height: 720 });
+  await page.clock.runFor(100);
+  await expect(page.getByText("이 게임은 키보드를 사용하는 Desktop 환경을 권장합니다.")).toBeVisible();
+  await expect.poll(() => canvas.evaluate((node) => node instanceof HTMLCanvasElement && node.width === Math.round(node.getBoundingClientRect().width * devicePixelRatio))).toBe(true);
+  expect(errors).toEqual([]);
+});

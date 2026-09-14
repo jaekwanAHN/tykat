@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; background: #080b12; color: #e8ecf4; font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+body { margin: 0; }
+button { cursor: pointer; transition: background .15s, border-color .15s; }
+button:focus-visible { outline: 2px solid #bae6fd; outline-offset: 4px; }
+button:disabled { cursor: not-allowed; opacity: .4; }
+.arena { height: clamp(390px, 64vh, 700px); }
+.eyebrow { color: #8b96ac; font-size: 10px; letter-spacing: .2em; }
+.secondary { border: 1px solid #475569; border-radius: 6px; padding: 10px 20px; font-size: 13px; }
+.secondary:hover { background: #242e40; }
+.attack { display: flex; align-items: center; border: 1px solid #b97856; border-radius: 6px; padding: 15px 20px; background: #35251f; color: #ffddc4; text-align: left; }
+.attack:hover:enabled { background: #503227; border-color: #ffb186; }
+progress { display: block; appearance: none; border: 0; overflow: hidden; background: #292d3c; border-radius: 2px; width: 100%; }
+progress::-webkit-progress-bar { background: #292d3c; }
+progress::-webkit-progress-value { background: var(--bar); }
+progress::-moz-progress-bar { background: var(--bar); }
+.hp { height: 7px; }
+.enemy { --bar: #ec977c; }
+.player { --bar: #9cd9ef; }
+.timer { height: 3px; --bar: #a49aaf; }
+.timer.danger { --bar: #ff765f; }

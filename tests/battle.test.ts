@@ -1,0 +1,11 @@
+import { describe, expect, it } from "vitest";
+import { applyDamage, GameEngine } from "../src/game/engine/GameEngine";
+function advance(engine: GameEngine, milliseconds: number, step = 20) { for (let elapsed = 0; elapsed < milliseconds; elapsed += step) engine.update(Math.min(step, milliseconds - elapsed)); }
+describe("Phase 1 battle", () => {
+  it("starts with 100/200 HP and ignores idle attacks", () => { const engine = new GameEngine(() => {}); engine.attack(); advance(engine, 5000); expect(engine.snapshot).toEqual({ status: "idle", playerHp: 100, enemyHp: 200, attackRemaining: 5000 }); engine.start(); engine.attack(); expect(engine.snapshot.enemyHp).toBe(190); });
+  it.each([10, 20, 50, 100])("deals 20 damage every five seconds with %d ms frames", (step) => { const engine = new GameEngine(() => {}); engine.start(); advance(engine, 4990, step); expect(engine.snapshot.playerHp).toBe(100); engine.update(10); expect(engine.snapshot.playerHp).toBe(80); advance(engine, 5000, step); expect(engine.snapshot.playerHp).toBe(60); });
+  it("clamps delayed frames and ignores invalid deltas", () => { const engine = new GameEngine(() => {}); engine.start(); engine.update(60000); engine.update(-100); engine.update(NaN); expect(engine.snapshot.attackRemaining).toBe(4900); expect(engine.snapshot.playerHp).toBe(100); });
+  it("stops combat after either side reaches zero and resets all state", () => { const engine = new GameEngine(() => {}); engine.start(); for (let i = 0; i < 25; i++) engine.attack(); advance(engine, 10000); expect(engine.snapshot).toMatchObject({ status: "victory", enemyHp: 0, playerHp: 100 }); engine.start(); advance(engine, 25000); engine.attack(); expect(engine.snapshot).toMatchObject({ status: "gameover", playerHp: 0, enemyHp: 200 }); engine.start(); expect(engine.snapshot).toEqual({ status: "playing", playerHp: 100, enemyHp: 200, attackRemaining: 5000 }); });
+  it("publishes timer changes at 10 Hz instead of every frame", () => { let notifications = 0; const engine = new GameEngine(() => { notifications++; }); engine.start(); advance(engine, 1000, 10); expect(notifications).toBe(11); });
+  it("clamps HP at zero and does not heal from negative damage", () => { expect(applyDamage(5, 10)).toBe(0); expect(applyDamage(100, -20)).toBe(100); });
+});
